@@ -1,23 +1,26 @@
+# File: package.json
 {
-  "name": "runway-generator-server",
-  "version": "1.0.0",
-  "description": "MCP server for Runway ML video generation",
-  "main": "dist/server.js",
+  "name": "runway-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server exposing RunwayML image/video generation as GPT-callable tools.",
+  "private": true,
+  "type": "module",
   "scripts": {
+    "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "dev": "ts-node server.ts",
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "fastify": "^4.26.2"
+    "@modelcontextprotocol/sdk": "^1.17.4",
+    "@runwayml/sdk": "^2.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
-    "ts-node": "^10.9.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "tsx": "^4.15.7",
+    "typescript": "^5.5.4"
   }
 }
