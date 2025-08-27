@@ -8,7 +8,7 @@ import {
   StreamableHTTPServerTransport
 } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
-import { registerRunwayTools, createRunwayClient } from "./runwayTools.js";
+import { registerRunwayTools, createRunwayClient } from "./src/runwayTools.js";
 
 /**
  * Build an MCP server instance and register tools.
