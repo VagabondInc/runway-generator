@@ -49,6 +49,12 @@ const sessions: Record<
 > = {};
 
 app.all("/mcp", async (req: Request, res: Response) => {
+  // Handle GPT Actions Accept header compatibility
+  const acceptHeader = req.headers.accept || '';
+  if (!acceptHeader.includes('text/event-stream') && !acceptHeader.includes('*/*')) {
+    req.headers.accept = 'application/json, text/event-stream';
+  }
+
   try {
     // If this is an initialize request, start a new session.
     const isInit =
@@ -117,6 +123,56 @@ app.all("/mcp", async (req: Request, res: Response) => {
         id: null
       });
     }
+  }
+});
+
+// GPT Actions compatible endpoint - returns JSON instead of SSE
+app.post("/gpt-action", async (req: Request, res: Response) => {
+  try {
+    const server = buildServer();
+    
+    // Handle MCP tools/call method
+    if (req.body.method === "tools/call" && req.body.params) {
+      const { name, arguments: args } = req.body.params;
+      
+      // Get the registered tool and call it
+      const tools = server.listTools();
+      const tool = tools.tools?.find(t => t.name === name);
+      
+      if (!tool) {
+        return res.status(400).json({
+          jsonrpc: "2.0",
+          error: { code: -32601, message: `Tool ${name} not found` },
+          id: req.body.id
+        });
+      }
+      
+      // Call the tool directly
+      const result = await server.callTool({ name, arguments: args });
+      
+      return res.json({
+        jsonrpc: "2.0",
+        result: result,
+        id: req.body.id
+      });
+    }
+    
+    res.status(400).json({
+      jsonrpc: "2.0", 
+      error: { code: -32602, message: "Invalid params" },
+      id: req.body.id
+    });
+    
+  } catch (err: any) {
+    res.status(500).json({
+      jsonrpc: "2.0",
+      error: { 
+        code: -32603, 
+        message: "Internal server error", 
+        data: err?.message 
+      },
+      id: req.body.id || null
+    });
   }
 });
 
