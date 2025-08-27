@@ -49,10 +49,22 @@ const sessions: Record<
 > = {};
 
 app.all("/mcp", async (req: Request, res: Response) => {
-  // Handle GPT Actions Accept header compatibility
-  const acceptHeader = req.headers.accept || '';
-  if (!acceptHeader.includes('text/event-stream') && !acceptHeader.includes('*/*')) {
-    req.headers.accept = 'application/json, text/event-stream';
+  const acceptHeader = req.headers.accept || "";
+
+  // Validate that client accepts both required content types
+  if (
+    !acceptHeader.includes("application/json") ||
+    !acceptHeader.includes("text/event-stream")
+  ) {
+    return res.status(406).json({
+      jsonrpc: "2.0",
+      error: {
+        code: -32000,
+        message:
+          "Not Acceptable: Client must accept both application/json and text/event-stream"
+      },
+      id: null
+    });
   }
 
   try {
