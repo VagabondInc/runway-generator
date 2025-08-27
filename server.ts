@@ -67,7 +67,7 @@ app.all("/mcp", async (req: Request, res: Response) => {
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => sessionId,
         enableDnsRebindingProtection: true,
-        allowedHosts: (process.env.ALLOWED_HOSTS || "127.0.0.1,localhost")
+        allowedHosts: (process.env.ALLOWED_HOSTS || "127.0.0.1,localhost,runway-generator-liard.vercel.app")
           .split(",")
           .map((s) => s.trim()),
         allowedOrigins: (process.env.ALLOWED_ORIGINS || "*")
