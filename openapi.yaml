@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Runway MCP Server
-  description: Generate images and videos using Runway ML via MCP protocol
-  version: 1.0.0
+  description: Generate images and videos using Runway ML. Server handles all task polling internally and returns completed results with media URLs.
+  version: 1.1.0
 servers:
   - url: https://runway-generator-liard.vercel.app
 
@@ -10,8 +10,21 @@ paths:
   /gpt-action:
     post:
       operationId: callRunwayMCP
-      summary: Call Runway MCP server methods
-      description: Execute Runway ML operations through MCP protocol
+      summary: Generate media with Runway ML
+      description: |
+        Execute Runway ML operations. The server handles all task polling internally and waits for completion before responding.
+        
+        **Key Features:**
+        - Server-side polling: No need to manage tasks manually
+        - Automatic completion: Returns final media URLs directly
+        - Built-in timeout: 10-minute default timeout for generation tasks
+        
+        **Available Operations:**
+        - `runway.text_to_image`: Generate images from text prompts
+        - `runway.image_to_video`: Create videos from images with motion prompts
+        - `runway.video_upscale`: Upscale videos to higher resolution
+        - `runway.tasks.retrieve`: Get status of specific tasks
+        - `runway.tasks.cancel`: Cancel running tasks
       requestBody:
         required: true
         content:
@@ -44,7 +57,13 @@ paths:
                       description: Runway tool to execute
                     arguments:
                       type: object
-                      description: Tool-specific arguments
+                      description: |
+                        Tool-specific arguments. Common parameters:
+                        - `promptText`: Text description for generation (required for text_to_image)
+                        - `promptImage`: URL to source image (required for image_to_video) 
+                        - `model`: Runway model to use (defaults: gen4_image, gen4_turbo)
+                        - `ratio`: Aspect ratio like "1024:1024", "1360:768", etc.
+                        - `timeoutMs`: Custom timeout in milliseconds (default: 600000 = 10 minutes)
                       additionalProperties: true
                   required: ["name", "arguments"]
               required: ["jsonrpc", "id", "method", "params"]
@@ -86,7 +105,9 @@ paths:
                       model: "gen4_turbo"
       responses:
         "200":
-          description: MCP response with generated media
+          description: |
+            Successful response with completed generation results. 
+            Contains resource_link objects with direct URLs to generated media and task details.
           content:
             application/json:
               schema:
@@ -100,10 +121,35 @@ paths:
                     properties:
                       content:
                         type: array
+                        description: Array containing resource links and task information
                         items:
                           type: object
+                          properties:
+                            type:
+                              type: string
+                              enum: ["resource_link", "text"]
+                              description: Type of content item
+                            resource:
+                              type: string
+                              description: Direct URL to generated media (for resource_link type)
+                            name:
+                              type: string 
+                              description: Display name for the resource
+                            text:
+                              type: string
+                              description: JSON string with task details (for text type)
                   id:
                     type: string
+              example:
+                jsonrpc: "2.0"
+                result:
+                  content:
+                    - type: "resource_link"
+                      resource: "https://media.runwayml.com/generated/image123.jpg"
+                      name: "output_01"
+                    - type: "text" 
+                      text: '{"taskId": "task_abc123", "status": "SUCCEEDED", "output": ["https://media.runwayml.com/generated/image123.jpg"]}'
+                id: "1"
         "400":
           description: Invalid request format
         "500":
