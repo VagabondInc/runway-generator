@@ -66,7 +66,7 @@ app.all("/mcp", async (req: Request, res: Response) => {
 
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => sessionId,
-        enableDnsRebindingProtection: true,
+        enableDnsRebindingProtection: false,
         allowedHosts: (process.env.ALLOWED_HOSTS || "127.0.0.1,localhost,runway-generator-liard.vercel.app")
           .split(",")
           .map((s) => s.trim()),
@@ -118,6 +118,15 @@ app.all("/mcp", async (req: Request, res: Response) => {
       });
     }
   }
+});
+
+// Health check endpoint
+app.get("/", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    message: "Runway MCP Server running",
+    endpoints: ["/mcp"]
+  });
 });
 
 const port = Number(process.env.PORT || 3030);
