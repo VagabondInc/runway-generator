@@ -246,7 +246,7 @@ app.get("/", (req, res) => {
   res.json({ 
     status: "ok", 
     message: "Runway MCP Server running",
-    endpoints: ["/mcp", "/openapi.yaml"]
+    endpoints: ["/mcp", "/gpt-action", "/openapi.yaml"]
   });
 });
 
