@@ -207,10 +207,178 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
             isError: true
           };
         }
+      } else if (name === "runway.image_to_video") {
+        const { promptImage, promptText, model = "gen4_turbo", ratio, wait = true, timeoutMs } = args;
+        
+        try {
+          const createPromise = runway.imageToVideo.create({
+            model,
+            promptImage,
+            promptText,
+            ...(ratio ? { ratio } : {})
+          });
+
+          if (!wait) {
+            const task = await createPromise;
+            result = {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify({ taskId: task.id, status: "PENDING" }, null, 2)
+                }
+              ]
+            };
+          } else {
+            const taskResult = await createPromise.waitForTaskOutput({
+              timeout: timeoutMs ?? undefined
+            });
+
+            const outputs = Array.isArray(taskResult.output) ? taskResult.output : [];
+            const resourceLinks = outputs.map((u, i) => ({
+              type: "resource_link",
+              resource: u,
+              name: `output_${String(i + 1).padStart(2, "0")}`
+            }));
+
+            result = {
+              content: [
+                ...resourceLinks,
+                {
+                  type: "text",
+                  text: JSON.stringify({
+                    taskId: taskResult.id,
+                    status: taskResult.status,
+                    output: outputs
+                  }, null, 2)
+                }
+              ]
+            };
+          }
+        } catch (error: any) {
+          result = {
+            content: [
+              { type: "text", text: `Error: ${error.message}` }
+            ],
+            isError: true
+          };
+        }
+      } else if (name === "runway.video_upscale") {
+        const { video, model = "gen4_turbo", wait = true, timeoutMs } = args;
+        
+        try {
+          const createPromise = runway.videoUpscale.create({
+            model,
+            video
+          } as any);
+
+          if (!wait) {
+            const task = await createPromise;
+            result = {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify({ taskId: task.id, status: "PENDING" }, null, 2)
+                }
+              ]
+            };
+          } else {
+            const taskResult = await createPromise.waitForTaskOutput({
+              timeout: timeoutMs ?? undefined
+            });
+
+            const outputs = Array.isArray(taskResult.output) ? taskResult.output : [];
+            const resourceLinks = outputs.map((u, i) => ({
+              type: "resource_link",
+              resource: u,
+              name: `output_${String(i + 1).padStart(2, "0")}`
+            }));
+
+            result = {
+              content: [
+                ...resourceLinks,
+                {
+                  type: "text",
+                  text: JSON.stringify({
+                    taskId: taskResult.id,
+                    status: taskResult.status,
+                    output: outputs
+                  }, null, 2)
+                }
+              ]
+            };
+          }
+        } catch (error: any) {
+          result = {
+            content: [
+              { type: "text", text: `Error: ${error.message}` }
+            ],
+            isError: true
+          };
+        }
+      } else if (name === "runway.tasks.retrieve") {
+        const { id, wait = false, timeoutMs } = args;
+        
+        try {
+          const promise = runway.tasks.retrieve(id as string);
+          const taskResult = wait
+            ? await promise.waitForTaskOutput({ timeout: timeoutMs ?? undefined })
+            : await promise;
+
+          const outputs = Array.isArray((taskResult as any).output)
+            ? ((taskResult as any).output as string[])
+            : [];
+
+          const resourceLinks = outputs.map((u, i) => ({
+            type: "resource_link",
+            resource: u,
+            name: `output_${String(i + 1).padStart(2, "0")}`
+          }));
+
+          result = {
+            content: [
+              ...resourceLinks,
+              {
+                type: "text",
+                text: JSON.stringify(taskResult, null, 2)
+              }
+            ]
+          };
+        } catch (error: any) {
+          result = {
+            content: [
+              { type: "text", text: `Error: ${error.message}` }
+            ],
+            isError: true
+          };
+        }
+      } else if (name === "runway.tasks.cancel") {
+        const { id } = args;
+        
+        try {
+          // @ts-expect-error: some SDK versions expose cancel()
+          const cancelled = await (runway.tasks.cancel?.(id) ??
+            runway.post?.(`/v1/tasks/${id}/cancel`, {}));
+          
+          result = {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(cancelled ?? { id, cancelled: true }, null, 2)
+              }
+            ]
+          };
+        } catch (error: any) {
+          result = {
+            content: [
+              { type: "text", text: `Error: ${error.message}` }
+            ],
+            isError: true
+          };
+        }
       } else {
         return res.status(400).json({
           jsonrpc: "2.0",
-          error: { code: -32601, message: `Tool ${name} not implemented yet` },
+          error: { code: -32601, message: `Tool ${name} not found` },
           id: req.body.id
         });
       }
