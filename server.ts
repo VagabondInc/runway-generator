@@ -28,6 +28,9 @@ function buildServer() {
 const app = express();
 app.use(express.json());
 
+// Serve static files from public directory
+app.use(express.static('public'));
+
 // CORS (configure appropriately for production)
 app.use(
   cors({
@@ -431,13 +434,17 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
   }
 });
 
-// Health check endpoint
+// Health check endpoint - redirect to web UI
 app.get("/", (req, res) => {
-  res.json({ 
-    status: "ok", 
-    message: "Runway MCP Server running",
-    endpoints: ["/mcp", "/gpt-action", "/openapi.yaml"]
-  });
+  if (req.headers.accept && req.headers.accept.includes('text/html')) {
+    res.redirect('/index.html');
+  } else {
+    res.json({ 
+      status: "ok", 
+      message: "Runway MCP Server running",
+      endpoints: ["/mcp", "/gpt-action", "/openapi.yaml", "/index.html (web UI)"]
+    });
+  }
 });
 
 // Serve OpenAPI spec for GPT Actions

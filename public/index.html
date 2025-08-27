@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Runway Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9f9f9;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .radio-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .radio-item:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .radio-item input[type="radio"] {
+            margin-right: 10px;
+            scale: 1.2;
+        }
+
+        .radio-item input[type="radio"]:checked + label {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .radio-item:has(input:checked) {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .generation-type {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .type-button {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .type-button:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .type-button.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            display: none;
+            padding: 30px;
+            border-top: 1px solid #eee;
+            background: #f9f9f9;
+        }
+
+        .result h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .result-media {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #ffeaea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 12px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .generation-type {
+                flex-direction: column;
+            }
+            
+            .radio-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Runway Generator</h1>
+            <p>Create stunning images and videos with AI</p>
+        </div>
+
+        <div class="form-container">
+            <form id="generationForm">
+                <!-- Generation Type Selection -->
+                <div class="form-group">
+                    <label>What would you like to generate?</label>
+                    <div class="generation-type">
+                        <button type="button" class="type-button active" data-type="text-to-image">
+                            🖼️ Text to Image
+                        </button>
+                        <button type="button" class="type-button" data-type="image-to-video">
+                            🎥 Image to Video
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Image Upload (for image-to-video) -->
+                <div class="form-group hidden" id="imageUploadGroup">
+                    <label>Upload Source Image</label>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-text">📁 Click to upload or drag & drop</div>
+                        <div class="upload-subtext">PNG, JPG, GIF up to 10MB</div>
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                        <img id="imagePreview" alt="Preview">
+                    </div>
+                </div>
+
+                <!-- Text Prompt -->
+                <div class="form-group">
+                    <label for="prompt" id="promptLabel">Describe what you want to create</label>
+                    <textarea 
+                        id="prompt" 
+                        name="prompt" 
+                        placeholder="A serene mountain landscape at sunset with golden lighting..."
+                        required
+                    ></textarea>
+                </div>
+
+                <!-- Model Selection -->
+                <div class="form-group">
+                    <label>Model</label>
+                    <div class="radio-group" id="modelGroup">
+                        <div class="radio-item">
+                            <input type="radio" id="gen4_image" name="model" value="gen4_image" checked>
+                            <label for="gen4_image">Gen-4 Image</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="gen4_turbo" name="model" value="gen4_turbo">
+                            <label for="gen4_turbo">Gen-4 Turbo</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aspect Ratio -->
+                <div class="form-group">
+                    <label>Aspect Ratio</label>
+                    <div class="radio-group" id="ratioGroup">
+                        <div class="radio-item">
+                            <input type="radio" id="square" name="ratio" value="1024:1024" checked>
+                            <label for="square">Square (1:1)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="landscape" name="ratio" value="1360:768">
+                            <label for="landscape">Landscape (16:9)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="portrait" name="ratio" value="768:1360">
+                            <label for="portrait">Portrait (9:16)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="cinematic" name="ratio" value="2112:912">
+                            <label for="cinematic">Cinematic</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="generate-btn" id="generateBtn">
+                    ✨ Generate
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Creating your masterpiece... This may take a few minutes.</p>
+            </div>
+
+            <div class="error" id="error"></div>
+
+            <div class="result" id="result">
+                <h3>🎉 Your creation is ready!</h3>
+                <div id="resultContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://runway-generator-liard.vercel.app';
+        
+        // DOM elements
+        const form = document.getElementById('generationForm');
+        const typeButtons = document.querySelectorAll('.type-button');
+        const imageUploadGroup = document.getElementById('imageUploadGroup');
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const promptLabel = document.getElementById('promptLabel');
+        const prompt = document.getElementById('prompt');
+        const modelGroup = document.getElementById('modelGroup');
+        const generateBtn = document.getElementById('generateBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const result = document.getElementById('result');
+        const resultContent = document.getElementById('resultContent');
+
+        let currentType = 'text-to-image';
+        let uploadedImageUrl = null;
+
+        // Type selection
+        typeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                typeButtons.forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                currentType = button.dataset.type;
+                updateUI();
+            });
+        });
+
+        function updateUI() {
+            if (currentType === 'image-to-video') {
+                imageUploadGroup.classList.remove('hidden');
+                promptLabel.textContent = 'Describe the motion and camera movement';
+                prompt.placeholder = 'Camera slowly pans left, gentle wind moves through the scene...';
+                
+                // Update model options for video
+                modelGroup.innerHTML = `
+                    <div class="radio-item">
+                        <input type="radio" id="gen4_turbo_vid" name="model" value="gen4_turbo" checked>
+                        <label for="gen4_turbo_vid">Gen-4 Turbo</label>
+                    </div>
+                `;
+            } else {
+                imageUploadGroup.classList.add('hidden');
+                promptLabel.textContent = 'Describe what you want to create';
+                prompt.placeholder = 'A serene mountain landscape at sunset with golden lighting...';
+                
+                // Update model options for image
+                modelGroup.innerHTML = `
+                    <div class="radio-item">
+                        <input type="radio" id="gen4_image" name="model" value="gen4_image" checked>
+                        <label for="gen4_image">Gen-4 Image</label>
+                    </div>
+                    <div class="radio-item">
+                        <input type="radio" id="gen4_turbo" name="model" value="gen4_turbo">
+                        <label for="gen4_turbo">Gen-4 Turbo</label>
+                    </div>
+                `;
+            }
+        }
+
+        // File upload handling
+        uploadArea.addEventListener('click', () => imageInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleImageUpload(files[0]);
+            }
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleImageUpload(e.target.files[0]);
+            }
+        });
+
+        function handleImageUpload(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please upload an image file.');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showError('Image must be less than 10MB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedImageUrl = e.target.result;
+                imagePreview.src = uploadedImageUrl;
+                imagePreview.style.display = 'block';
+                uploadArea.querySelector('.upload-text').textContent = '✅ Image uploaded successfully';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (currentType === 'image-to-video' && !uploadedImageUrl) {
+                showError('Please upload an image first.');
+                return;
+            }
+
+            const formData = new FormData(form);
+            const promptText = formData.get('prompt');
+            const model = formData.get('model');
+            const ratio = formData.get('ratio');
+
+            showLoading();
+            hideError();
+            hideResult();
+
+            try {
+                let requestBody;
+                
+                if (currentType === 'text-to-image') {
+                    requestBody = {
+                        jsonrpc: "2.0",
+                        id: Date.now().toString(),
+                        method: "tools/call",
+                        params: {
+                            name: "runway.text_to_image",
+                            arguments: {
+                                promptText,
+                                model,
+                                ratio
+                            }
+                        }
+                    };
+                } else {
+                    requestBody = {
+                        jsonrpc: "2.0",
+                        id: Date.now().toString(),
+                        method: "tools/call",
+                        params: {
+                            name: "runway.image_to_video",
+                            arguments: {
+                                promptImage: uploadedImageUrl,
+                                promptText,
+                                model,
+                                ratio
+                            }
+                        }
+                    };
+                }
+
+                const response = await fetch(`${API_BASE}/gpt-action`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error.message || 'Generation failed');
+                }
+
+                displayResult(data.result);
+                
+            } catch (err) {
+                showError(err.message || 'Something went wrong. Please try again.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        function showLoading() {
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+            loading.style.display = 'block';
+        }
+
+        function hideLoading() {
+            generateBtn.disabled = false;
+            generateBtn.textContent = '✨ Generate';
+            loading.style.display = 'none';
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        function hideError() {
+            error.style.display = 'none';
+        }
+
+        function hideResult() {
+            result.style.display = 'none';
+        }
+
+        function displayResult(resultData) {
+            const content = resultData.content || [];
+            const resourceLinks = content.filter(item => item.type === 'resource_link');
+            
+            if (resourceLinks.length === 0) {
+                showError('No media was generated. Please try again.');
+                return;
+            }
+
+            resultContent.innerHTML = '';
+            
+            resourceLinks.forEach(link => {
+                const mediaElement = currentType === 'text-to-image' 
+                    ? document.createElement('img')
+                    : document.createElement('video');
+                
+                mediaElement.src = link.resource;
+                mediaElement.className = 'result-media';
+                mediaElement.style.marginBottom = '15px';
+                
+                if (currentType === 'image-to-video') {
+                    mediaElement.controls = true;
+                    mediaElement.autoplay = true;
+                    mediaElement.loop = true;
+                }
+                
+                const downloadLink = document.createElement('a');
+                downloadLink.href = link.resource;
+                downloadLink.download = link.name || 'runway-generated';
+                downloadLink.textContent = `⬇️ Download ${link.name || 'media'}`;
+                downloadLink.style.display = 'block';
+                downloadLink.style.marginBottom = '20px';
+                downloadLink.style.color = '#667eea';
+                downloadLink.style.textDecoration = 'none';
+                
+                resultContent.appendChild(mediaElement);
+                resultContent.appendChild(downloadLink);
+            });
+            
+            result.style.display = 'block';
+            result.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Initialize
+        updateUI();
+    </script>
+</body>
+</html>
