@@ -1,0 +1,101 @@
+openapi: 3.1.0
+info:
+  title: Runway MCP Server
+  description: Generate images and videos using Runway ML via MCP protocol
+  version: 1.0.0
+servers:
+  - url: https://runway-generator-liard.vercel.app
+
+paths:
+  /mcp:
+    post:
+      operationId: callRunwayMCP
+      summary: Call Runway MCP server methods
+      description: Execute Runway ML operations through MCP protocol
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jsonrpc:
+                  type: string
+                  enum: ["2.0"]
+                  description: JSON-RPC version
+                id:
+                  type: string
+                  description: Unique request identifier
+                method:
+                  type: string
+                  enum: ["tools/call"]
+                  description: MCP method to call
+                params:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      enum: 
+                        - "runway.text_to_image"
+                        - "runway.image_to_video"  
+                        - "runway.video_upscale"
+                        - "runway.tasks.retrieve"
+                        - "runway.tasks.cancel"
+                      description: Runway tool to execute
+                    arguments:
+                      type: object
+                      description: Tool-specific arguments
+                      additionalProperties: true
+                  required: ["name", "arguments"]
+              required: ["jsonrpc", "id", "method", "params"]
+            examples:
+              text_to_image:
+                summary: Generate an image from text
+                value:
+                  jsonrpc: "2.0"
+                  id: "1"
+                  method: "tools/call"
+                  params:
+                    name: "runway.text_to_image"
+                    arguments:
+                      promptText: "a beautiful sunset over mountains"
+                      model: "gen4_image"
+                      ratio: "1024:1024"
+                      wait: true
+              image_to_video:
+                summary: Generate a video from an image
+                value:
+                  jsonrpc: "2.0"
+                  id: "2"
+                  method: "tools/call"
+                  params:
+                    name: "runway.image_to_video"
+                    arguments:
+                      promptImage: "https://example.com/image.jpg"
+                      promptText: "camera pans left, gentle movement"
+                      model: "gen4_turbo"
+                      wait: true
+              video_upscale:
+                summary: Upscale a video to higher resolution
+                value:
+                  jsonrpc: "2.0"
+                  id: "3"
+                  method: "tools/call"
+                  params:
+                    name: "runway.video_upscale"
+                    arguments:
+                      video: "https://example.com/video.mp4"
+                      model: "gen4_turbo"
+                      wait: true
+      responses:
+        "200":
+          description: MCP response with generated media
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-sent events containing MCP response
+        "400":
+          description: Invalid request format
+        "500":
+          description: Server error
