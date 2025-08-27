@@ -143,7 +143,7 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
   try {
     // Handle MCP tools/call method
     if (req.body.method === "tools/call" && req.body.params) {
-      const { name, arguments: args } = req.body.params;
+      const { name, arguments: args = {} } = req.body.params;
       
       // Import the runway tools directly
       const { createRunwayClient } = await import('./src/runwayTools.js');
@@ -154,6 +154,17 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
       
       if (name === "runway.text_to_image") {
         const { promptText, model = "gen4_image", ratio, seed, timeoutMs } = args;
+        
+        if (!promptText) {
+          return res.status(400).json({
+            jsonrpc: "2.0",
+            error: { 
+              code: -32602, 
+              message: "Missing required parameter 'promptText' for runway.text_to_image" 
+            },
+            id: req.body.id
+          });
+        }
         
         try {
           // Always wait for completion - handle polling server-side
@@ -199,6 +210,17 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
       } else if (name === "runway.image_to_video") {
         const { promptImage, promptText, model = "gen4_turbo", ratio, timeoutMs } = args;
         
+        if (!promptImage || !promptText) {
+          return res.status(400).json({
+            jsonrpc: "2.0",
+            error: { 
+              code: -32602, 
+              message: "Missing required parameters 'promptImage' and 'promptText' for runway.image_to_video" 
+            },
+            id: req.body.id
+          });
+        }
+        
         try {
           // Always wait for completion - handle polling server-side
           const createPromise = runway.imageToVideo.create({
@@ -243,6 +265,17 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
       } else if (name === "runway.video_upscale") {
         const { video, model = "gen4_turbo", timeoutMs } = args;
         
+        if (!video) {
+          return res.status(400).json({
+            jsonrpc: "2.0",
+            error: { 
+              code: -32602, 
+              message: "Missing required parameter 'video' for runway.video_upscale" 
+            },
+            id: req.body.id
+          });
+        }
+        
         try {
           // Always wait for completion - handle polling server-side
           const createPromise = runway.videoUpscale.create({
@@ -285,6 +318,17 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
       } else if (name === "runway.tasks.retrieve") {
         const { id, wait = false, timeoutMs } = args;
         
+        if (!id) {
+          return res.status(400).json({
+            jsonrpc: "2.0",
+            error: { 
+              code: -32602, 
+              message: "Missing required parameter 'id' for runway.tasks.retrieve" 
+            },
+            id: req.body.id
+          });
+        }
+        
         try {
           const promise = runway.tasks.retrieve(id as string);
           const taskResult = wait
@@ -320,6 +364,17 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
         }
       } else if (name === "runway.tasks.cancel") {
         const { id } = args;
+        
+        if (!id) {
+          return res.status(400).json({
+            jsonrpc: "2.0",
+            error: { 
+              code: -32602, 
+              message: "Missing required parameter 'id' for runway.tasks.cancel" 
+            },
+            id: req.body.id
+          });
+        }
         
         try {
           // @ts-expect-error: some SDK versions expose cancel()
