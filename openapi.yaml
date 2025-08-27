@@ -61,7 +61,6 @@ paths:
                       promptText: "a beautiful sunset over mountains"
                       model: "gen4_image"
                       ratio: "1024:1024"
-                      wait: true
               image_to_video:
                 summary: Generate a video from an image
                 value:
@@ -74,7 +73,6 @@ paths:
                       promptImage: "https://example.com/image.jpg"
                       promptText: "camera pans left, gentle movement"
                       model: "gen4_turbo"
-                      wait: true
               video_upscale:
                 summary: Upscale a video to higher resolution
                 value:
@@ -86,7 +84,6 @@ paths:
                     arguments:
                       video: "https://example.com/video.mp4"
                       model: "gen4_turbo"
-                      wait: true
       responses:
         "200":
           description: MCP response with generated media

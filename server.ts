@@ -153,9 +153,10 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
       let result;
       
       if (name === "runway.text_to_image") {
-        const { promptText, model = "gen4_image", ratio, seed, wait = true, timeoutMs } = args;
+        const { promptText, model = "gen4_image", ratio, seed, timeoutMs } = args;
         
         try {
+          // Always wait for completion - handle polling server-side
           const createPromise = runway.textToImage.create({
             model,
             promptText,
@@ -163,42 +164,30 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
             ...(seed !== undefined ? { seed } : {})
           });
 
-          if (!wait) {
-            const task = await createPromise;
-            result = {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify({ taskId: task.id, status: "PENDING" }, null, 2)
-                }
-              ]
-            };
-          } else {
-            const taskResult = await createPromise.waitForTaskOutput({
-              timeout: timeoutMs ?? undefined
-            });
+          const taskResult = await createPromise.waitForTaskOutput({
+            timeout: timeoutMs ?? 600000 // Default 10 minutes
+          });
 
-            const outputs = Array.isArray(taskResult.output) ? taskResult.output : [];
-            const resourceLinks = outputs.map((u, i) => ({
-              type: "resource_link",
-              resource: u,
-              name: `output_${String(i + 1).padStart(2, "0")}`
-            }));
+          const outputs = Array.isArray(taskResult.output) ? taskResult.output : [];
+          const resourceLinks = outputs.map((u, i) => ({
+            type: "resource_link",
+            resource: u,
+            name: `output_${String(i + 1).padStart(2, "0")}`
+          }));
 
-            result = {
-              content: [
-                ...resourceLinks,
-                {
-                  type: "text",
-                  text: JSON.stringify({
-                    taskId: taskResult.id,
-                    status: taskResult.status,
-                    output: outputs
-                  }, null, 2)
-                }
-              ]
-            };
-          }
+          result = {
+            content: [
+              ...resourceLinks,
+              {
+                type: "text",
+                text: JSON.stringify({
+                  taskId: taskResult.id,
+                  status: taskResult.status,
+                  output: outputs
+                }, null, 2)
+              }
+            ]
+          };
         } catch (error: any) {
           result = {
             content: [
@@ -208,9 +197,10 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
           };
         }
       } else if (name === "runway.image_to_video") {
-        const { promptImage, promptText, model = "gen4_turbo", ratio, wait = true, timeoutMs } = args;
+        const { promptImage, promptText, model = "gen4_turbo", ratio, timeoutMs } = args;
         
         try {
+          // Always wait for completion - handle polling server-side
           const createPromise = runway.imageToVideo.create({
             model,
             promptImage,
@@ -218,42 +208,30 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
             ...(ratio ? { ratio } : {})
           });
 
-          if (!wait) {
-            const task = await createPromise;
-            result = {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify({ taskId: task.id, status: "PENDING" }, null, 2)
-                }
-              ]
-            };
-          } else {
-            const taskResult = await createPromise.waitForTaskOutput({
-              timeout: timeoutMs ?? undefined
-            });
+          const taskResult = await createPromise.waitForTaskOutput({
+            timeout: timeoutMs ?? 600000 // Default 10 minutes
+          });
 
-            const outputs = Array.isArray(taskResult.output) ? taskResult.output : [];
-            const resourceLinks = outputs.map((u, i) => ({
-              type: "resource_link",
-              resource: u,
-              name: `output_${String(i + 1).padStart(2, "0")}`
-            }));
+          const outputs = Array.isArray(taskResult.output) ? taskResult.output : [];
+          const resourceLinks = outputs.map((u, i) => ({
+            type: "resource_link",
+            resource: u,
+            name: `output_${String(i + 1).padStart(2, "0")}`
+          }));
 
-            result = {
-              content: [
-                ...resourceLinks,
-                {
-                  type: "text",
-                  text: JSON.stringify({
-                    taskId: taskResult.id,
-                    status: taskResult.status,
-                    output: outputs
-                  }, null, 2)
-                }
-              ]
-            };
-          }
+          result = {
+            content: [
+              ...resourceLinks,
+              {
+                type: "text",
+                text: JSON.stringify({
+                  taskId: taskResult.id,
+                  status: taskResult.status,
+                  output: outputs
+                }, null, 2)
+              }
+            ]
+          };
         } catch (error: any) {
           result = {
             content: [
@@ -263,50 +241,39 @@ app.post("/gpt-action", async (req: Request, res: Response) => {
           };
         }
       } else if (name === "runway.video_upscale") {
-        const { video, model = "gen4_turbo", wait = true, timeoutMs } = args;
+        const { video, model = "gen4_turbo", timeoutMs } = args;
         
         try {
+          // Always wait for completion - handle polling server-side
           const createPromise = runway.videoUpscale.create({
             model,
             video
           } as any);
 
-          if (!wait) {
-            const task = await createPromise;
-            result = {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify({ taskId: task.id, status: "PENDING" }, null, 2)
-                }
-              ]
-            };
-          } else {
-            const taskResult = await createPromise.waitForTaskOutput({
-              timeout: timeoutMs ?? undefined
-            });
+          const taskResult = await createPromise.waitForTaskOutput({
+            timeout: timeoutMs ?? 600000 // Default 10 minutes
+          });
 
-            const outputs = Array.isArray(taskResult.output) ? taskResult.output : [];
-            const resourceLinks = outputs.map((u, i) => ({
-              type: "resource_link",
-              resource: u,
-              name: `output_${String(i + 1).padStart(2, "0")}`
-            }));
+          const outputs = Array.isArray(taskResult.output) ? taskResult.output : [];
+          const resourceLinks = outputs.map((u, i) => ({
+            type: "resource_link",
+            resource: u,
+            name: `output_${String(i + 1).padStart(2, "0")}`
+          }));
 
-            result = {
-              content: [
-                ...resourceLinks,
-                {
-                  type: "text",
-                  text: JSON.stringify({
-                    taskId: taskResult.id,
-                    status: taskResult.status,
-                    output: outputs
-                  }, null, 2)
-                }
-              ]
-            };
-          }
+          result = {
+            content: [
+              ...resourceLinks,
+              {
+                type: "text",
+                text: JSON.stringify({
+                  taskId: taskResult.id,
+                  status: taskResult.status,
+                  output: outputs
+                }, null, 2)
+              }
+            ]
+          };
         } catch (error: any) {
           result = {
             content: [
