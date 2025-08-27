@@ -129,26 +129,79 @@ app.all("/mcp", async (req: Request, res: Response) => {
 // GPT Actions compatible endpoint - returns JSON instead of SSE
 app.post("/gpt-action", async (req: Request, res: Response) => {
   try {
-    const server = buildServer();
-    
     // Handle MCP tools/call method
     if (req.body.method === "tools/call" && req.body.params) {
       const { name, arguments: args } = req.body.params;
       
-      // Get the registered tool and call it
-      const tools = server.listTools();
-      const tool = tools.tools?.find(t => t.name === name);
+      // Import the runway tools directly
+      const { createRunwayClient } = await import('./src/runwayTools.js');
+      const runway = createRunwayClient();
       
-      if (!tool) {
+      // Call the appropriate runway tool
+      let result;
+      
+      if (name === "runway.text_to_image") {
+        const { promptText, model = "gen4_image", ratio, seed, wait = true, timeoutMs } = args;
+        
+        try {
+          const createPromise = runway.textToImage.create({
+            model,
+            promptText,
+            ...(ratio ? { ratio } : {}),
+            ...(seed !== undefined ? { seed } : {})
+          });
+
+          if (!wait) {
+            const task = await createPromise;
+            result = {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify({ taskId: task.id, status: "PENDING" }, null, 2)
+                }
+              ]
+            };
+          } else {
+            const taskResult = await createPromise.waitForTaskOutput({
+              timeout: timeoutMs ?? undefined
+            });
+
+            const outputs = Array.isArray(taskResult.output) ? taskResult.output : [];
+            const resourceLinks = outputs.map((u, i) => ({
+              type: "resource_link",
+              resource: u,
+              name: `output_${String(i + 1).padStart(2, "0")}`
+            }));
+
+            result = {
+              content: [
+                ...resourceLinks,
+                {
+                  type: "text",
+                  text: JSON.stringify({
+                    taskId: taskResult.id,
+                    status: taskResult.status,
+                    output: outputs
+                  }, null, 2)
+                }
+              ]
+            };
+          }
+        } catch (error: any) {
+          result = {
+            content: [
+              { type: "text", text: `Error: ${error.message}` }
+            ],
+            isError: true
+          };
+        }
+      } else {
         return res.status(400).json({
           jsonrpc: "2.0",
-          error: { code: -32601, message: `Tool ${name} not found` },
+          error: { code: -32601, message: `Tool ${name} not implemented yet` },
           id: req.body.id
         });
       }
-      
-      // Call the tool directly
-      const result = await server.callTool({ name, arguments: args });
       
       return res.json({
         jsonrpc: "2.0",
